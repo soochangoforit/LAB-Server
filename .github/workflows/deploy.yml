@@ -3,7 +3,7 @@
 name : test-deploy
 
 on:
-  pull_request:
+  push:
     branches: test-deploy
   
 permissions:
