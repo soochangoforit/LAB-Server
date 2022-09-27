@@ -5,14 +5,14 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javax.validation.Valid;
 import lab.reservation_server.dto.request.ExpireDate;
-import lab.reservation_server.dto.response.DefaultDataResponse;
+import lab.reservation_server.dto.request.TokenCheckDto;
+import lab.reservation_server.dto.response.token.MemberIsAuth;
 import lab.reservation_server.dto.response.token.TokenValue;
 import lab.reservation_server.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,13 +31,21 @@ public class TokenController {
      *
      * @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
      */
-    @GetMapping("/api/token")
+    @PostMapping("/api/token")
     @ApiOperation(value="토큰 발급" , notes = "유효기간이 존재하는 토큰을 받을 수 있다.")
-    public ResponseEntity<DefaultDataResponse<TokenValue>> createToken(@RequestBody @Valid ExpireDate expirationDate) {
+    public ResponseEntity<TokenValue> createToken(@RequestBody @Valid ExpireDate expirationDate) {
 
       String token = tokenService.createToken(expirationDate);
       TokenValue tokenValue = new TokenValue(token);
-      return ResponseEntity.ok(DefaultDataResponse.of(HttpStatus.CREATED,"success for token", tokenValue));
+
+      return ResponseEntity.ok(tokenValue);
+    }
+
+    @PostMapping("/api/token/check")
+    @ApiOperation(value="토큰 유효성 검사" , notes = "유효한 토큰인지 검사한다.")
+    public ResponseEntity<MemberIsAuth> checkToken(@RequestBody @Valid TokenCheckDto tokenCheckDto) {
+      MemberIsAuth memberIsAuth = tokenService.checkToken(tokenCheckDto);
+      return ResponseEntity.ok(memberIsAuth);
     }
 
 

@@ -1,5 +1,6 @@
 package lab.reservation_server.domain;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -30,14 +31,14 @@ public class Member extends BaseTime {
     /**
      * 학생이 예약한 내역
      */
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY , cascade = CascadeType.REMOVE)
     private Reservation reservation;
 
     /**
      * 학생의 학번
      */
     @Column(unique = true, nullable = false, length = 10)
-    private String username;
+    private String userId;
 
     /**
      * 학생의 비밀번호
@@ -69,14 +70,34 @@ public class Member extends BaseTime {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    /**
+     * 학생 휴대폰의 디바이스 토큰
+     */
+    @Column(nullable = false)
+    private String deviceToken;
+
+    /**
+     * 학생 인증 여부
+     */
+    @Column(nullable = false)
+    private Boolean isAuth;
+
     @Builder
-    public Member(String username, String password, String name, String email, String phoneNum, Role role) {
-        this.username = username;
+    public Member(String userId, String password, String name, String email, String phoneNum, Role role, String deviceToken, Boolean isAuth) {
+        this.userId = userId;
         this.password = password;
         this.name = name;
         this.email = email;
         this.phoneNum = phoneNum;
         this.role = role;
+        this.deviceToken = deviceToken;
+        this.isAuth = isAuth;
     }
 
+    /**
+     * 토큰 인증이 완료되면 isAuth 필드 true로 변경
+     */
+    public void updateAuth(boolean isAuth) {
+        this.isAuth = isAuth;
+    }
 }
