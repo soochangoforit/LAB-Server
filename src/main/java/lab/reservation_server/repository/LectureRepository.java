@@ -1,7 +1,6 @@
 package lab.reservation_server.repository;
 
-import java.sql.Date;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Optional;
 import lab.reservation_server.domain.Lab;
@@ -13,13 +12,18 @@ import org.springframework.data.repository.query.Param;
 
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
-  // check duplicate lecture
-  // @Query("select l from Lecture l where l.lab.roomNumber = :roomNum and l.day = :day and l.endTime > :startTime and l.startTime < :endTime")
+
+  /**
+   * 강의실 번호, 요일, 시작 시간, 종료시간을 통해서 해당 강의실에 똑같은 시간대로 강의가 존재하는지 확인
+   */
   @Query("select l from Lecture l join fetch l.lab lb where lb.roomNumber = :roomNum and l.day = :day and l.endTime > :startTime and l.startTime < :endTime")
   Optional<Lecture> checkDuplicate(@Param("roomNum") String roomNumber,@Param("day") String day,@Param("startTime") LocalTime startTime,@Param("endTime") LocalTime endTime);
 
   Optional<Lecture> findByCode(String code);
 
+  /**
+   * 과목 코드를 통해서 강의 삭제
+   */
   @Modifying
   @Query("delete from Lecture l where l.code = :code")
   void deleteAllByCode(@Param("code") String code);
@@ -28,9 +32,14 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
 
   /**
-   * 현재 시간에 강의가 있는지 확인
+   * 현재 시간에 강의가 있는지 확인 (지난 학기 개설 과목을 DB에서 삭제하지 않아도 올바른 데이터 반환)
    */
-  @Query("select l from Lecture l where l.lab =:lab and l.day = :day and l.endTime >= :now and l.startTime <= :now")
-  Optional<Lecture> checkNowByLabId(@Param("lab") Lab lab, @Param("day") String day, @Param("now") LocalTime now);
+  @Query("select l from Lecture l where l.lab =:lab and l.day = :day and l.endTime >= :now and l.startTime <= :now and l.startDate <= :today and l.endDate >= :today")
+  Optional<Lecture> checkNowByLabId(@Param("lab") Lab lab, @Param("day") String day, @Param("now") LocalTime now, @Param("today") LocalDate today);
 
+  /**
+   * 특정 강의실, 특정 시간대, 오늘 요일에 강의가 있는지 확인 (지난 학기 개설 과목을 DB에서 삭제하지 않아도 올바른 데이터 반환)
+   */
+  @Query("select l from Lecture l where l.lab =:lab and l.day = :day and l.endTime >= :startTime and l.startTime <= :endTime and l.startDate <= :today and l.endDate >= :today")
+  Optional<Lecture> checkNowByLabIdBetweenTime(@Param("lab") Lab lab,@Param("day") String day,@Param("startTime") LocalTime startTime,@Param("endTime") LocalTime endTime,@Param("today") LocalDate today);
 }

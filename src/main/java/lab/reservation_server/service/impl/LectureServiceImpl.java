@@ -1,19 +1,16 @@
 package lab.reservation_server.service.impl;
 
-import java.sql.Date;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import lab.reservation_server.domain.Lab;
 import lab.reservation_server.domain.Lecture;
-import lab.reservation_server.dto.request.LectureEditDto;
-import lab.reservation_server.dto.request.LectureSaveDto;
+import lab.reservation_server.dto.request.lecture.LectureEditDto;
+import lab.reservation_server.dto.request.lecture.LectureSaveDto;
 import lab.reservation_server.dto.response.lecture.LectureInfo;
 import lab.reservation_server.exception.BadRequestException;
 import lab.reservation_server.exception.LecturePresentException;
@@ -22,7 +19,6 @@ import lab.reservation_server.repository.LectureRepository;
 import lab.reservation_server.service.LectureService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.asm.Advice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -116,13 +112,30 @@ public class LectureServiceImpl implements LectureService {
       // 현재 시간에 강의가 있는지 확인
         if (lectureRepository.checkNowByLabId(lab,
             now.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN),
-            now.toLocalTime()).isPresent()) {
+            now.toLocalTime(), LocalDate.now()).isPresent()) {
             throw new LecturePresentException("현재 시간에 강의가 있습니다.");
         }
     }
 
 
-     /**
+    /**
+     * 특정 강의실이 특정 시간대에 수업중인지 확인 (해당 학기에 개설된 강의만 찾는다.)
+     */
+    @Override
+    public void checkLectureBetweenTime(Lab lab, LocalTime startTime, LocalTime endTime) {
+
+        if (lectureRepository.checkNowByLabIdBetweenTime(lab,
+            LocalDateTime.now().getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.KOREAN)
+            , startTime
+            , endTime
+            , LocalDate.now()).isPresent()) {
+          throw new LecturePresentException("해당 시간에 강의가 있습니다.");
+        }
+
+    }
+
+
+  /**
      * roomNumber로 lab을 찾아서 반환
      */
     private Lab checkIfLabPresent(String roomNumber) {
