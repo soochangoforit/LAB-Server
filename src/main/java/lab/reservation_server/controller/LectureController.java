@@ -8,12 +8,14 @@ import lab.reservation_server.dto.request.lecture.LectureEditDto;
 import lab.reservation_server.dto.request.lecture.LectureSaveDto;
 import lab.reservation_server.dto.response.DefaultMessageResponse;
 import lab.reservation_server.dto.response.lecture.LectureInfo;
+import lab.reservation_server.service.LabService;
 import lab.reservation_server.service.LectureService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,11 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Validated
 @RequiredArgsConstructor
-@Api(tags = "Lecture Controller : 실습실 강의 시간표 관련")
+@Api(tags = "Lecture Controller : 실습실 강의 시간표 관련, 시간표 추가 수정 삭제")
 @Slf4j
 public class LectureController {
 
     private final LectureService lectureService;
+    private final LabService labService;
 
     /**
      * 강의 시간표 추가
@@ -44,22 +47,18 @@ public class LectureController {
      * class 단에서 Validated를 선언하고
      * Valid를 객체에 적용하면, 500 ConstraintViolationException 가 발생한다.
      */
-    @PutMapping("/api/lectures/{code}")
+    @PutMapping("/api/lectures")
     @ApiOperation(value="강의 시간표 수정" , notes = "강의 시간표를 수정할 수 있다.")
-    public ResponseEntity<DefaultMessageResponse> updateLecture(@RequestBody List<@Valid LectureEditDto> lectures,
-                                                                @PathVariable(value = "code") String code) {
+    public ResponseEntity<?> updateLecture(@RequestBody List<@Valid LectureEditDto> lectures) {
+
+        // 강의 코드 추출
+        String code = lectures.get(0).getCode();
 
         // 강의 코드가 존재하는지 확인
         lectureService.checkIfCodeIsPresent(code);
 
-        // 강의 시간표가 없을 경우
-        if(lectures.get(0).getRoomNumber().isEmpty()){
-            lectureService.deleteLecture(code);
-            return ResponseEntity.ok(new DefaultMessageResponse("강의 시간표 삭제 성공"));
-        }
-
-        lectureService.updateLecture(code,lectures);
-        return ResponseEntity.ok(new DefaultMessageResponse("강의 시간표 수정 성공"));
+        List<LectureEditDto> lectureEditDtos = lectureService.updateLecture(code, lectures);
+        return ResponseEntity.ok(lectureEditDtos);
     }
 
 
@@ -75,6 +74,16 @@ public class LectureController {
         return ResponseEntity.ok(new DefaultMessageResponse("강의 시간표 삭제 성공"));
     }
 
+
+    /**
+     * 강의실 전체에 대한 모든 시간표 조회
+     */
+    @GetMapping("/api/lectures")
+    @ApiOperation(value="모든 강의실 전체 시간표 조회" , notes = "강의실 전체에 대한 시간표를 조회할 수 있다.")
+    public ResponseEntity<List<LectureInfo>> getAllLabTimeTable() {
+        List<LectureInfo> allTimeTable = labService.getAllLabTimeTable();
+        return ResponseEntity.ok(allTimeTable);
+    }
 
 
 
