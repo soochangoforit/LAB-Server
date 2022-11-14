@@ -12,7 +12,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
 import lab.reservation_server.domain.enums.Role;
+import lab.reservation_server.dto.request.member.MemberUpdate;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -68,6 +70,10 @@ public class Member extends BaseTime {
     @Column(unique = true, nullable = false)
     private String phoneNum;
 
+    // default column name is "a"
+    @Column(nullable = false)
+    private String major;
+
     /**
      * 학생의 권한
      */
@@ -86,6 +92,19 @@ public class Member extends BaseTime {
      */
     @Column(nullable = false)
     private Boolean isAuth;
+
+    /**
+     * 학생의 경고 누적
+     * 10-01, 회원 가입 시점에는 0으로 초기화
+     */
+    @Column(nullable = false)
+    private Integer warningCount;
+
+    @PrePersist
+    public void prePersist() {
+        this.major = "컴퓨터소프트웨어공학과";
+        this.warningCount = 0;
+    }
 
     @Builder
     public Member(String userId, String password, String name, String email, String phoneNum, Role role, String deviceToken, Boolean isAuth) {
@@ -108,5 +127,25 @@ public class Member extends BaseTime {
 
     public void updateDeviceToken(String deviceToken) {
         this.deviceToken = deviceToken;
+    }
+
+    public void updateMemberInfo(MemberUpdate memberUpdate) {
+        this.major = memberUpdate.getMajor();
+        this.email = memberUpdate.getEmail();
+        this.phoneNum = memberUpdate.getPhoneNum();
+        this.name = memberUpdate.getName();
+        this.isAuth = memberUpdate.getIsAuth();
+        this.password = memberUpdate.getPassword();
+        this.role = Role.valueOf(memberUpdate.getRole());
+        this.deviceToken = memberUpdate.getDeviceToken();
+        this.userId = memberUpdate.getUserId();
+    }
+
+    public void warning() {
+        this.warningCount++;
+    }
+
+    public void resetWarning() {
+        this.warningCount = 0;
     }
 }

@@ -22,10 +22,14 @@ public class MemberInfo {
     private String name;
     private String email;
 
+    private String major;
+
     private String phoneNum;
     private String role;
 
     private String deviceToken;
+
+    private int warningCount;
 
     private Boolean isAuth;
 
@@ -35,10 +39,12 @@ public class MemberInfo {
       this.userId = saved.getUserId();
       this.password = saved.getPassword();
       this.name = saved.getName();
+      this.major = saved.getMajor();
       this.email = saved.getEmail();
       this.phoneNum = saved.getPhoneNum();
       this.role = saved.getRole().getAuthority();
       this.deviceToken = saved.getDeviceToken();
       this.isAuth = saved.getIsAuth();
+      this.warningCount = saved.getWarningCount();
     }
 }

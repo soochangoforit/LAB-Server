@@ -1,10 +1,16 @@
 package lab.reservation_server.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lab.reservation_server.domain.Member;
+import lab.reservation_server.domain.enums.Role;
 import lab.reservation_server.dto.request.member.MemberLogin;
 import lab.reservation_server.dto.request.member.MemberSignUp;
+import lab.reservation_server.dto.request.member.MemberUpdate;
 import lab.reservation_server.dto.request.member.UserIdCheck;
 import lab.reservation_server.dto.response.member.MemberInfo;
+import lab.reservation_server.dto.response.member.MemberSimpleInfo;
+import lab.reservation_server.dto.response.member.MemberSimpleInfos;
 import lab.reservation_server.dto.response.reservation.ReservationInfo;
 import lab.reservation_server.exception.BadRequestException;
 import lab.reservation_server.exception.DuplicateException;
@@ -30,7 +36,7 @@ public class MemberServiceImpl implements MemberService {
      */
     @Override
     @Transactional
-      public Boolean signUp(MemberSignUp memberSignUp) {
+    public Boolean signUp(MemberSignUp memberSignUp) {
         // member 저장 후 unique 제약 조건으로 이미 존재하는 회원일 경우 error 처리
         try {
            memberRepository.save(memberSignUp.toEntity(memberSignUp));
@@ -62,7 +68,7 @@ public class MemberServiceImpl implements MemberService {
 
       // reservation service를 통해서 reservationInfo 가져오기
       ReservationInfo reservation =
-          reservationService.getReservationFromMemberId(memberFromDb.getId());
+          reservationService.getCurrentReservationFromMemberId(memberFromDb.getId());
 
 
       // return memberinfo
@@ -73,8 +79,82 @@ public class MemberServiceImpl implements MemberService {
      * 사용자의 아이디 중복 확인
      */
     @Override
-      public boolean checkId(UserIdCheck userIdCheck) {
+    public boolean checkId(UserIdCheck userIdCheck) {
         return memberRepository.findByUserId(userIdCheck.getUserId()).isPresent();
-      }
+    }
+
+    /**
+     * 회원 사용자 정보 업데이트
+     */
+    @Override
+    @Transactional
+    public MemberUpdate updateMember(MemberUpdate memberUpdate) {
+
+      checkValidation(memberUpdate);
+
+      Member member = memberRepository.findById(memberUpdate.getId())
+          .orElseThrow(() -> new BadRequestException("존재하지 않는 사용자입니다."));
+
+      member.updateMemberInfo(memberUpdate);
+
+      return new MemberUpdate(member);
+    }
+
+    @Override
+    @Transactional
+    public String deleteMember(String userId) {
+        Member member = memberRepository.findByUserId(userId)
+            .orElseThrow(() -> new BadRequestException("존재하지 않는 사용자입니다."));
+        memberRepository.delete(member);
+      return "탈퇴 성공";
+    }
+
+    @Override
+    public MemberSimpleInfos getMemberList() {
+        List<Member> members = memberRepository.findAllWithRole(Role.USER);
+
+      List<MemberSimpleInfo> infos =
+          members.stream().map(MemberSimpleInfo::new).collect(Collectors.toList());
+
+      return new MemberSimpleInfos(infos);
+    }
+
+    @Override
+    @Transactional
+    public String warning(String userId) {
+
+        Member member = memberRepository.findByUserId(userId)
+            .orElseThrow(() -> new BadRequestException("존재하지 않는 사용자입니다."));
+
+        member.warning();
+
+        return "경고 횟수 1회 증가";
+    }
+
+    @Override
+    @Transactional
+    public String resetWarning(String userId) {
+        Member member = memberRepository.findByUserId(userId)
+            .orElseThrow(() -> new BadRequestException("존재하지 않는 사용자입니다."));
+
+        member.resetWarning();
+
+        return "경고 횟수 초기화";
+    }
+
+  private void checkValidation(MemberUpdate memberUpdate) {
+
+      memberRepository.findByUserId(memberUpdate.getUserId()).ifPresent(member -> {
+        if (!member.getId().equals(memberUpdate.getId())) {
+          throw new DuplicateException("이미 존재하는 아이디입니다.");
+        }
+      });
+
+      memberRepository.findByPhoneNum(memberUpdate.getPhoneNum()).ifPresent(member -> {
+        if (!member.getId().equals(memberUpdate.getId())) {
+          throw new DuplicateException("이미 존재하는 전화번호 입니다.");
+        }
+      });
+    }
 
 }
