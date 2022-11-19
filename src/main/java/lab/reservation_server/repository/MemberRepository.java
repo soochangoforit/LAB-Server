@@ -29,4 +29,15 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
   @Query("select m from Member m where m.role = :role")
   List<Member> findAllWithRole(@Param("role") Role user);
+
+  /**
+   * 회원들의 인증 여부를 전부 false로 일괄 업데이트
+   * 일괄 업데이트를 한 후, 영속성 컨텍스트 초기화
+   *
+   * update except AUMIN, MANAGER
+   */
+  @Modifying(clearAutomatically = true)
+  @Query("update Member m set m.isAuth = false where m.role = 'USER' or  m.role = 'USER_TAKEOFF' or  m.role = 'USER_GRADUATE'")
+  void updateMemberIsAuthFalse();
+
 }
